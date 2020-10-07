@@ -1297,6 +1297,11 @@ void Info::get_memory_info(double *meminfo)
     meminfo[1] = 0;
     meminfo[2] = 0;
 
+#if defined(__faasm)
+    // getrusage system call not included in faasm/wasi-libc. Current usage
+    // of it in LAMMPS is highly dispensable.
+    (void) 0;
+#else
 #if defined(_WIN32)
     HANDLE phandle = GetCurrentProcess();
     PROCESS_MEMORY_COUNTERS_EX pmc;
@@ -1312,6 +1317,7 @@ void Info::get_memory_info(double *meminfo)
     struct rusage ru;
     if (getrusage(RUSAGE_SELF, &ru) == 0)
       meminfo[2] = (double)ru.ru_maxrss/1024.0;
+#endif
 #endif
 }
 
