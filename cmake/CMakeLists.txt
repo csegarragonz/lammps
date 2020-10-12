@@ -25,12 +25,16 @@ set(LAMMPS_POTENTIALS_DIR ${LAMMPS_DIR}/potentials)
 find_package(Git)
 
 ## Faasm additional linker flags
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \
-    -Xlinker --export=__heap_base \
-    -Xlinker --export=__data_end \
-    -Xlinker --export=__wasm_call_ctors \
-")
-message(STATUS "Fasm-debug: linker flags = ${CMAKE_EXE_LINKER_FLAGS}")
+get_directory_property(FAASM_DEFS COMPILE_DEFINITIONS)
+if((${FAASM_DEFS} MATCHES "^__faasm") OR (${FAASM_DEFS} MATCHES ";__faasm"))
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \
+        -Xlinker --export=__heap_base \
+        -Xlinker --export=__data_end \
+        -Xlinker --export=__wasm_call_ctors \
+        -Xlinker --max-memory=4294901760 \
+        -Wl,-z,stack-size=4194304 -Wl, \
+    ")
+endif()
 
 # by default, install into $HOME/.local (not /usr/local), so that no root access (and sudo!!) is needed
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -105,7 +109,13 @@ file(GLOB MAIN_SOURCES ${LAMMPS_SOURCE_DIR}/main.cpp)
 list(REMOVE_ITEM ALL_SOURCES ${MAIN_SOURCES})
 add_library(lammps ${ALL_SOURCES})
 add_executable(lmp ${MAIN_SOURCES})
-target_link_libraries(lmp PRIVATE lammps)
+# Faasm additional libraries
+if((${FAASM_DEFS} MATCHES "^__faasm") OR (${FAASM_DEFS} MATCHES ";__faasm"))
+    set(FAASM_FUNC_LIBS faasm c-printscan-long-double)
+    target_link_libraries(lmp PRIVATE lammps ${FAASM_FUNC_LIBS})
+else()
+    target_link_libraries(lmp PRIVATE lammps)
+endif()
 set_target_properties(lmp PROPERTIES OUTPUT_NAME ${LAMMPS_BINARY})
 install(TARGETS lmp EXPORT LAMMPS_Targets DESTINATION ${CMAKE_INSTALL_BINDIR})
 
