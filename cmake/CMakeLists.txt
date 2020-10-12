@@ -24,6 +24,14 @@ set(LAMMPS_POTENTIALS_DIR ${LAMMPS_DIR}/potentials)
 
 find_package(Git)
 
+## Faasm additional linker flags
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \
+    -Xlinker --export=__heap_base \
+    -Xlinker --export=__data_end \
+    -Xlinker --export=__wasm_call_ctors \
+")
+message(STATUS "Fasm-debug: linker flags = ${CMAKE_EXE_LINKER_FLAGS}")
+
 # by default, install into $HOME/.local (not /usr/local), so that no root access (and sudo!!) is needed
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/.local" CACHE PATH "default install path" FORCE )
