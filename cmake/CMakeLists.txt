@@ -11,6 +11,7 @@ endif()
 
 project(lammps CXX)
 set(SOVERSION 0)
+option(LAMMPS_FAASM "Build LAMMPS for Faasm" ON)
 
 get_filename_component(LAMMPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 get_filename_component(LAMMPS_LIB_BINARY_DIR ${CMAKE_BINARY_DIR}/lib ABSOLUTE)
@@ -25,8 +26,7 @@ set(LAMMPS_POTENTIALS_DIR ${LAMMPS_DIR}/potentials)
 find_package(Git)
 
 ## Faasm additional linker flags
-get_directory_property(FAASM_DEFS COMPILE_DEFINITIONS)
-if((${FAASM_DEFS} MATCHES "^__faasm") OR (${FAASM_DEFS} MATCHES ";__faasm"))
+if(LAMMPS_FAASM)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \
         -Xlinker --export=__heap_base \
         -Xlinker --export=__data_end \
@@ -110,7 +110,7 @@ list(REMOVE_ITEM ALL_SOURCES ${MAIN_SOURCES})
 add_library(lammps ${ALL_SOURCES})
 add_executable(lmp ${MAIN_SOURCES})
 # Faasm additional libraries
-if((${FAASM_DEFS} MATCHES "^__faasm") OR (${FAASM_DEFS} MATCHES ";__faasm"))
+if(LAMMPS_FAASM)
     set(FAASM_FUNC_LIBS faasm c-printscan-long-double)
     target_link_libraries(lmp PRIVATE lammps ${FAASM_FUNC_LIBS})
 else()
