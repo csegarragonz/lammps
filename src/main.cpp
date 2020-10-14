@@ -16,6 +16,7 @@
 
 #include <mpi.h>
 #include <cstdlib>
+#include <iostream>
 
 #if defined(LAMMPS_TRAP_FPE) && defined(_GNU_SOURCE)
 #include <fenv.h>
@@ -33,6 +34,20 @@ using namespace LAMMPS_NS;
 
 int main(int argc, char **argv)
 {
+// Faasm instrumentation
+// https://www.open-mpi.org/faq/?category=running#mpi-environmental-variables
+// OMPI_COMM_WORLD_SIZE - the number of processes in this process' MPI_COMM_WORLD
+// OMPI_UNIVERSE_SIZE - the number of process slots allocated to this job.
+  const char *ompi_env = std::getenv("OMPI_COMM_WORLD_SIZE");
+  if (ompi_env)
+  {
+    std::cout << "OMPI_COMM_WORLD_SIZE: " << ompi_env << "\n";
+  }
+  else
+  {
+    std::cout << "OMPI_COMM_WORLD_SIZE: 0\n";
+  }
+  
   MPI_Init(&argc,&argv);
 
 // enable trapping selected floating point exceptions.

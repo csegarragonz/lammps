@@ -11,7 +11,7 @@ endif()
 
 project(lammps CXX)
 set(SOVERSION 0)
-option(LAMMPS_FAASM "Build LAMMPS for Faasm" ON)
+option(LAMMPS_FAASM "Build LAMMPS for Faasm" OFF)
 
 get_filename_component(LAMMPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 get_filename_component(LAMMPS_LIB_BINARY_DIR ${CMAKE_BINARY_DIR}/lib ABSOLUTE)
