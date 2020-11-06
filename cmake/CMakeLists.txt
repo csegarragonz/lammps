@@ -25,8 +25,9 @@ set(LAMMPS_POTENTIALS_DIR ${LAMMPS_DIR}/potentials)
 
 find_package(Git)
 
-## Faasm additional linker flags
+## Faasm additional linker flags, and definitions
 if(LAMMPS_FAASM)
+    set(FAASM_ROOT /usr/local/faasm)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \
         -Xlinker --export=__heap_base \
         -Xlinker --export=__data_end \
@@ -172,18 +173,28 @@ if(BUILD_MPI)
   endif()
 else()
   enable_language(C)
-  file(GLOB MPI_SOURCES ${LAMMPS_SOURCE_DIR}/STUBS/mpi.c)
-  add_library(mpi_stubs STATIC ${MPI_SOURCES})
-  set_target_properties(mpi_stubs PROPERTIES OUTPUT_NAME lammps_mpi_stubs${LAMMPS_MACHINE})
-  target_include_directories(mpi_stubs PUBLIC $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
-  if(BUILD_SHARED_LIBS)
-    target_link_libraries(lammps PRIVATE mpi_stubs)
-    target_include_directories(lammps INTERFACE $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
-    target_compile_definitions(lammps INTERFACE $<INSTALL_INTERFACE:LAMMPS_LIB_NO_MPI>)
+  # If cross-compiling, LAMMPS automatically links to a stub mpi impl.
+  if(LAMMPS_FAASM)
+    message(STATUS "Linking with Faasm's MPI Implementation")
+    target_link_libraries(lammps PUBLIC 
+        ${FAASM_ROOT}/llvm-sysroot/lib/wasm32-wasi/libfaasmpi.a
+        ${FAASM_ROOT}/llvm-sysroot/lib/wasm32-wasi/libfaabricmpi.a
+    )
+    # target_link_libraries(lmp PRIVATE ${FAASM_ROOT}/llvm-sysroot/lib/wasm32-wasi/libmpi.a)
   else()
-    target_link_libraries(lammps PUBLIC mpi_stubs)
+    file(GLOB MPI_SOURCES ${LAMMPS_SOURCE_DIR}/STUBS/mpi.c)
+    add_library(mpi_stubs STATIC ${MPI_SOURCES})
+    set_target_properties(mpi_stubs PROPERTIES OUTPUT_NAME lammps_mpi_stubs${LAMMPS_MACHINE})
+    target_include_directories(mpi_stubs PUBLIC $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
+    if(BUILD_SHARED_LIBS)
+      target_link_libraries(lammps PRIVATE mpi_stubs)
+      target_include_directories(lammps INTERFACE $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
+      target_compile_definitions(lammps INTERFACE $<INSTALL_INTERFACE:LAMMPS_LIB_NO_MPI>)
+    else()
+      target_link_libraries(lammps PUBLIC mpi_stubs)
+    endif()
+    add_library(MPI::MPI_CXX ALIAS mpi_stubs)
   endif()
-  add_library(MPI::MPI_CXX ALIAS mpi_stubs)
 endif()
 
 set(LAMMPS_SIZES "smallbig" CACHE STRING "LAMMPS integer sizes (smallsmall: all 32-bit, smallbig: 64-bit #atoms #timesteps, bigbig: also 64-bit imageint, 64-bit atom ids)")
