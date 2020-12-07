@@ -29,6 +29,8 @@ find_package(Git)
 if(LAMMPS_FAASM)
     set(FAASM_ROOT /usr/local/faasm)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} \
+    	${FAASM_EXE_LINKER_FLAGS} \
+	-Xlinker --stack-first \
         -Xlinker --export=__heap_base \
         -Xlinker --export=__data_end \
         -Xlinker --export=__wasm_call_ctors \
