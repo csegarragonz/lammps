@@ -11,6 +11,7 @@ endif()
 
 project(lammps CXX)
 set(SOVERSION 0)
+option(LAMMPS_FAABRIC "Build LAMMPS for Faabric (MPI-NATIVE)" ON)
 
 get_filename_component(LAMMPS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/.. ABSOLUTE)
 get_filename_component(LAMMPS_LIB_BINARY_DIR ${CMAKE_BINARY_DIR}/lib ABSOLUTE)
@@ -70,7 +71,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Intel")
 endif()
 
 # we require C++11 without extensions
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "Use compiler extensions")
 
@@ -154,18 +155,31 @@ if(BUILD_MPI)
   endif()
 else()
   enable_language(C)
-  file(GLOB MPI_SOURCES ${LAMMPS_SOURCE_DIR}/STUBS/mpi.c)
-  add_library(mpi_stubs STATIC ${MPI_SOURCES})
-  set_target_properties(mpi_stubs PROPERTIES OUTPUT_NAME lammps_mpi_stubs${LAMMPS_MACHINE})
-  target_include_directories(mpi_stubs PUBLIC $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
-  if(BUILD_SHARED_LIBS)
-    target_link_libraries(lammps PRIVATE mpi_stubs)
-    target_include_directories(lammps INTERFACE $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
-    target_compile_definitions(lammps INTERFACE $<INSTALL_INTERFACE:LAMMPS_LIB_NO_MPI>)
+  if(LAMMPS_FAABRIC)
+    message(STATUS "Linking with Faasm's MPI Implementation")
+    target_include_directories(lammps PUBLIC 
+        /build/faabric/install/include
+        /build/faabric/install/include/faabric/mpi
+    )
+    target_link_libraries(lammps PUBLIC
+        /build/faabric/install/lib/libfaabricmpi_native.so
+        /build/faabric/install/lib/libfaabricmpi.so
+        /build/faabric/install/lib/libfaabric.so
+    )
   else()
-    target_link_libraries(lammps PUBLIC mpi_stubs)
+      file(GLOB MPI_SOURCES ${LAMMPS_SOURCE_DIR}/STUBS/mpi.c)
+      add_library(mpi_stubs STATIC ${MPI_SOURCES})
+      set_target_properties(mpi_stubs PROPERTIES OUTPUT_NAME lammps_mpi_stubs${LAMMPS_MACHINE})
+      target_include_directories(mpi_stubs PUBLIC $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
+      if(BUILD_SHARED_LIBS)
+        target_link_libraries(lammps PRIVATE mpi_stubs)
+        target_include_directories(lammps INTERFACE $<BUILD_INTERFACE:${LAMMPS_SOURCE_DIR}/STUBS>)
+        target_compile_definitions(lammps INTERFACE $<INSTALL_INTERFACE:LAMMPS_LIB_NO_MPI>)
+      else()
+        target_link_libraries(lammps PUBLIC mpi_stubs)
+      endif()
+      add_library(MPI::MPI_CXX ALIAS mpi_stubs)
   endif()
-  add_library(MPI::MPI_CXX ALIAS mpi_stubs)
 endif()
 
 set(LAMMPS_SIZES "smallbig" CACHE STRING "LAMMPS integer sizes (smallsmall: all 32-bit, smallbig: 64-bit #atoms #timesteps, bigbig: also 64-bit imageint, 64-bit atom ids)")
