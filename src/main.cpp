@@ -79,7 +79,8 @@ int faabric::executor::mpiFunc()
   char *argv[] = {
     (char*) "foo.bar",
     (char*) "-in",
-    (char*) "/code/lammps/examples/controller/in.controller.wall", NULL
+    (char*) "/code/experiment-mpi-native/lammps/examples/controller/in.controller.wall",
+    NULL
   };
   MPI_Init(NULL, NULL);
 
