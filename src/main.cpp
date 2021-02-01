@@ -42,6 +42,7 @@ int main(int argc, char** argv)
     // Global configuration
     conf.maxNodes = 1;
     conf.maxNodesPerFunction = 1;
+    conf.logLevel = "trace";
 
     bool __isRoot;
     int __worldSize;
